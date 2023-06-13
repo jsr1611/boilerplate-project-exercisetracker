@@ -59,38 +59,56 @@ app.route("/api/users")
         }
     });
 
-app.route("/api/users/:_id/exercises")
-    .post(async (req, res) => {
-        let id = req.params._id;
-        let desc = req.body.description;
-        let period = req.body.duration;
-        let dateStr =
-            req.body.date == "undefined" || req.body.date == ""
-                ? new Date().toDateString()
-                : new Date(req.body.date).toDateString();
-        console.log(req.body.date + " " + dateStr);
-        try {
-            let user = await User.findById({ _id: id });
+app.route("/api/users/:_id/exercises").post(async (req, res) => {
+    let id = req.params._id;
+    let desc = req.body.description;
+    let period = req.body.duration;
+    let dateStr =
+        req.body.date == "undefined" || req.body.date == ""
+            ? new Date().toDateString()
+            : new Date(req.body.date).toDateString();
+    console.log(req.body.date + " " + dateStr);
+    try {
+        let user = await User.findById({ _id: id });
 
-            let exerCise = new Exercise({
-                username: user.username,
-                description: desc,
-                duration: period,
-                date: dateStr,
-            });
-            let data = await exerCise.save();
-            console.log(data);
-            user["exercise"] = data;
-            console.log(user);
-            res.json(user);
-        } catch (err) {
-            console.log(err);
-            res.send(err);
-        }
-    })
-    .get(async (req, res) => {
-        let id = req.params._id;
-    });
+        let exerCise = new Exercise({
+            username: user.username,
+            description: desc,
+            duration: period,
+            date: dateStr,
+        });
+        let data = await exerCise.save();
+        console.log(data);
+        user["exercise"] = data;
+        console.log(user);
+        res.json({
+            _id: user._id,
+            username: user.username,
+            exercise: data,
+        });
+    } catch (err) {
+        console.log(err);
+        res.send(err);
+    }
+});
+
+app.get("/api/users/:_id/logs", async (req, res) => {
+    try {
+        let user = await User.findById(req.params._id);
+        let logs = await Exercise.find({ username: user.username })
+            .select("-username|-_id")
+            .exec();
+        res.json({
+            username: user.username,
+            count: logs.length,
+            _id: user._id,
+            log: logs,
+        });
+    } catch (err) {
+        console.log(err);
+        res.send(err);
+    }
+});
 
 const listener = app.listen(process.env.PORT || 3000, () => {
     console.log("Your app is listening on port " + listener.address().port);
